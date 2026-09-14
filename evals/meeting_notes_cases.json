@@ -1,0 +1,363 @@
+[
+  {
+    "id": "explicit_owner_relative_due",
+    "input": {
+      "source_id": "eval-001",
+      "title": "Product sync",
+      "occurred_on": "2026-09-14",
+      "notes": "Maya: We'll ship onboarding v2 behind a feature flag. Leo, update the rollout checklist by Friday. Leo: Got it. Maya: We still need legal approval before enabling it for all users."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-001",
+        "title": "Product sync",
+        "occurred_on": "2026-09-14"
+      },
+      "decisions": [
+        {
+          "id": "d1",
+          "statement": "Ship onboarding v2 behind a feature flag.",
+          "evidence": [
+            {
+              "quote": "We'll ship onboarding v2 behind a feature flag.",
+              "speaker": "Maya"
+            }
+          ],
+          "confidence": 0.99
+        }
+      ],
+      "actions": [
+        {
+          "id": "a1",
+          "title": "Update the rollout checklist",
+          "details": null,
+          "owner": {
+            "name": "Leo",
+            "status": "explicit"
+          },
+          "due": {
+            "date": "2026-09-18",
+            "date_text": "by Friday",
+            "status": "resolved_from_relative"
+          },
+          "evidence": [
+            {
+              "quote": "Leo, update the rollout checklist by Friday.",
+              "speaker": "Maya"
+            },
+            {
+              "quote": "Got it.",
+              "speaker": "Leo"
+            }
+          ],
+          "confidence": 0.99,
+          "ambiguity_flags": [],
+          "approval_state": "pending"
+        }
+      ],
+      "open_questions": [
+        {
+          "id": "q1",
+          "question": "Has legal approved enabling onboarding v2 for all users?",
+          "evidence": [
+            {
+              "quote": "We still need legal approval before enabling it for all users.",
+              "speaker": "Maya"
+            }
+          ],
+          "confidence": 0.97
+        }
+      ],
+      "review": {
+        "needs_human_review": false,
+        "reasons": []
+      }
+    },
+    "evaluation_notes": "Tests explicit ownership, a relative date that is safely resolvable from meeting date, a decision, and an unresolved dependency."
+  },
+  {
+    "id": "missing_owner_explicit_due",
+    "input": {
+      "source_id": "eval-002",
+      "title": "Operations standup",
+      "occurred_on": "2026-09-15",
+      "notes": "We need to audit the failed imports by September 22. No owner has been assigned yet."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-002",
+        "title": "Operations standup",
+        "occurred_on": "2026-09-15"
+      },
+      "decisions": [],
+      "actions": [
+        {
+          "id": "a1",
+          "title": "Audit the failed imports",
+          "details": null,
+          "owner": {
+            "name": null,
+            "status": "missing"
+          },
+          "due": {
+            "date": "2026-09-22",
+            "date_text": "by September 22",
+            "status": "explicit"
+          },
+          "evidence": [
+            {
+              "quote": "We need to audit the failed imports by September 22.",
+              "speaker": null
+            },
+            {
+              "quote": "No owner has been assigned yet.",
+              "speaker": null
+            }
+          ],
+          "confidence": 0.98,
+          "ambiguity_flags": [
+            "missing_owner"
+          ],
+          "approval_state": "pending"
+        }
+      ],
+      "open_questions": [],
+      "review": {
+        "needs_human_review": true,
+        "reasons": [
+          "Action a1 has no assigned owner."
+        ]
+      }
+    },
+    "evaluation_notes": "Tests that Hermes preserves a missing owner instead of inventing one."
+  },
+  {
+    "id": "tentative_idea_committed_research",
+    "input": {
+      "source_id": "eval-003",
+      "title": "Data platform discussion",
+      "occurred_on": "2026-09-16",
+      "notes": "Possible idea: maybe move reporting to BigQuery. No decision yet. Sam: I'll compare BigQuery and Snowflake and bring a recommendation next week."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-003",
+        "title": "Data platform discussion",
+        "occurred_on": "2026-09-16"
+      },
+      "decisions": [],
+      "actions": [
+        {
+          "id": "a1",
+          "title": "Compare BigQuery and Snowflake and bring a recommendation",
+          "details": null,
+          "owner": {
+            "name": "Sam",
+            "status": "explicit"
+          },
+          "due": {
+            "date": null,
+            "date_text": "next week",
+            "status": "ambiguous"
+          },
+          "evidence": [
+            {
+              "quote": "I'll compare BigQuery and Snowflake and bring a recommendation next week.",
+              "speaker": "Sam"
+            }
+          ],
+          "confidence": 0.98,
+          "ambiguity_flags": [
+            "ambiguous_due_date"
+          ],
+          "approval_state": "pending"
+        }
+      ],
+      "open_questions": [
+        {
+          "id": "q1",
+          "question": "Should reporting move to BigQuery?",
+          "evidence": [
+            {
+              "quote": "Possible idea: maybe move reporting to BigQuery. No decision yet.",
+              "speaker": null
+            }
+          ],
+          "confidence": 0.98
+        }
+      ],
+      "review": {
+        "needs_human_review": true,
+        "reasons": [
+          "Action a1 has an ambiguous due date: next week."
+        ]
+      }
+    },
+    "evaluation_notes": "Tests the difference between a tentative idea and a committed research action. 'Next week' should remain ambiguous because no day is specified."
+  },
+  {
+    "id": "decision_without_action",
+    "input": {
+      "source_id": "eval-004",
+      "title": "Messaging review",
+      "occurred_on": "2026-09-17",
+      "notes": "Team agreed the customer-facing copy should say 'AI-assisted' rather than 'AI-powered'. No follow-up work is needed."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-004",
+        "title": "Messaging review",
+        "occurred_on": "2026-09-17"
+      },
+      "decisions": [
+        {
+          "id": "d1",
+          "statement": "Use 'AI-assisted' rather than 'AI-powered' in customer-facing copy.",
+          "evidence": [
+            {
+              "quote": "Team agreed the customer-facing copy should say 'AI-assisted' rather than 'AI-powered'.",
+              "speaker": null
+            }
+          ],
+          "confidence": 0.99
+        }
+      ],
+      "actions": [],
+      "open_questions": [],
+      "review": {
+        "needs_human_review": false,
+        "reasons": []
+      }
+    },
+    "evaluation_notes": "Tests that decisions are not automatically converted into tasks."
+  },
+  {
+    "id": "conditional_future_not_action",
+    "input": {
+      "source_id": "eval-005",
+      "title": "Pilot review",
+      "occurred_on": "2026-09-18",
+      "notes": "If the pilot reaches 20 customers, Priya can draft the scaling plan. We're at 12 customers now, so nothing to do yet."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-005",
+        "title": "Pilot review",
+        "occurred_on": "2026-09-18"
+      },
+      "decisions": [],
+      "actions": [],
+      "open_questions": [],
+      "review": {
+        "needs_human_review": false,
+        "reasons": []
+      }
+    },
+    "evaluation_notes": "Tests that a conditional future possibility is not treated as a committed action."
+  },
+  {
+    "id": "multiple_actions_open_question",
+    "input": {
+      "source_id": "eval-006",
+      "title": "Demo prep",
+      "occurred_on": "2026-09-14",
+      "notes": "Zoe: I'll send the invite by end of day. Amir: I can prepare the slides. We still need the room number from Facilities. Decision: keep the demo to 10 minutes."
+    },
+    "expected_output": {
+      "schema_version": "0.1.0",
+      "meeting": {
+        "source_id": "eval-006",
+        "title": "Demo prep",
+        "occurred_on": "2026-09-14"
+      },
+      "decisions": [
+        {
+          "id": "d1",
+          "statement": "Keep the demo to 10 minutes.",
+          "evidence": [
+            {
+              "quote": "Decision: keep the demo to 10 minutes.",
+              "speaker": null
+            }
+          ],
+          "confidence": 0.99
+        }
+      ],
+      "actions": [
+        {
+          "id": "a1",
+          "title": "Send the invite",
+          "details": null,
+          "owner": {
+            "name": "Zoe",
+            "status": "explicit"
+          },
+          "due": {
+            "date": "2026-09-14",
+            "date_text": "by end of day",
+            "status": "resolved_from_relative"
+          },
+          "evidence": [
+            {
+              "quote": "I'll send the invite by end of day.",
+              "speaker": "Zoe"
+            }
+          ],
+          "confidence": 0.99,
+          "ambiguity_flags": [],
+          "approval_state": "pending"
+        },
+        {
+          "id": "a2",
+          "title": "Prepare the slides",
+          "details": null,
+          "owner": {
+            "name": "Amir",
+            "status": "explicit"
+          },
+          "due": {
+            "date": null,
+            "date_text": null,
+            "status": "missing"
+          },
+          "evidence": [
+            {
+              "quote": "I can prepare the slides.",
+              "speaker": "Amir"
+            }
+          ],
+          "confidence": 0.95,
+          "ambiguity_flags": [
+            "missing_due_date"
+          ],
+          "approval_state": "pending"
+        }
+      ],
+      "open_questions": [
+        {
+          "id": "q1",
+          "question": "What is the room number for the demo?",
+          "evidence": [
+            {
+              "quote": "We still need the room number from Facilities.",
+              "speaker": null
+            }
+          ],
+          "confidence": 0.98
+        }
+      ],
+      "review": {
+        "needs_human_review": true,
+        "reasons": [
+          "Action a2 has no due date."
+        ]
+      }
+    },
+    "evaluation_notes": "Tests multiple actions, a same-day relative deadline, a missing deadline, a decision, and an open question."
+  }
+]

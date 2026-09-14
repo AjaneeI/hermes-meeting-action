@@ -36,14 +36,15 @@ Planned as the project grows:
 src/             Core workflow code
 prompts/         Versioned extraction and routing prompts
 schemas/         Structured output contracts
+evals/           Meeting-note evaluation cases and expected outputs
 integrations/    External tool adapters
- tests/           Evaluation and regression tests
- docs/            Architecture and implementation notes
+tests/           Automated validation and regression tests
+docs/            Architecture and implementation notes
 ```
 
 ## Current status
 
-**2026-09-14:** Repository initialized and GitHub connected through Composio. Next milestone is defining the first end-to-end meeting → structured actions → approval → task creation flow.
+**2026-09-14:** Repository initialized, the v0.1 structured action contract is defined, and a six-case evaluation baseline is in place. Next milestone is implementing the extraction runner, validating outputs against the schema, and measuring the low-cost extraction path before connecting durable task writes.
 
 ## Build log
 
