@@ -5,15 +5,20 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -22,3 +27,6 @@ jobs:
 
       - name: Validate expected eval outputs
         run: python scripts/validate_evals.py
+
+      - name: Smoke-test field scorer
+        run: python scripts/smoke_score.py
