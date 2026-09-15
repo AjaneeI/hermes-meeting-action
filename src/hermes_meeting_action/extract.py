@@ -106,25 +106,24 @@ def extract_meeting_with_metrics(
     system_prompt = _read_text(SYSTEM_PROMPT_PATH)
 
     started = time.perf_counter()
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model=model_name,
-        temperature=0,
-        messages=[
+        input=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": build_user_prompt(meeting)},
         ],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
+        text={
+            "format": {
+                "type": "json_schema",
                 "name": "hermes_meeting_action_output",
                 "strict": True,
                 "schema": schema,
-            },
+            }
         },
     )
     latency_ms = round((time.perf_counter() - started) * 1000, 2)
 
-    content = response.choices[0].message.content
+    content = response.output_text
     if not content:
         raise RuntimeError("Model returned an empty response.")
 
@@ -132,8 +131,8 @@ def extract_meeting_with_metrics(
     validate_output(payload)
 
     usage = response.usage
-    input_tokens = getattr(usage, "prompt_tokens", None) if usage else None
-    output_tokens = getattr(usage, "completion_tokens", None) if usage else None
+    input_tokens = getattr(usage, "input_tokens", None) if usage else None
+    output_tokens = getattr(usage, "output_tokens", None) if usage else None
     total_tokens = getattr(usage, "total_tokens", None) if usage else None
 
     metrics = ExtractionMetrics(
