@@ -1,0 +1,107 @@
+name: Benchmark Hermes models
+
+on:
+  workflow_dispatch:
+    inputs:
+      low_model:
+        description: Low-cost model ID
+        required: true
+        default: gpt-5.6-luna
+      strong_model:
+        description: Stronger fallback model ID
+        required: true
+        default: gpt-5.6-terra
+      low_reasoning:
+        description: Reasoning effort for low-cost model
+        required: true
+        default: none
+      strong_reasoning:
+        description: Reasoning effort for stronger model
+        required: true
+        default: low
+      low_input_price:
+        description: Low-model input USD per 1M tokens
+        required: true
+        default: "0.20"
+      low_output_price:
+        description: Low-model output USD per 1M tokens
+        required: true
+        default: "1.20"
+      strong_input_price:
+        description: Strong-model input USD per 1M tokens
+        required: true
+        default: "2.00"
+      strong_output_price:
+        description: Strong-model output USD per 1M tokens
+        required: true
+        default: "12.00"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: src
+      HERMES_API_KEY: ${{ secrets.HERMES_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify model credential
+        shell: bash
+        run: |
+          if [ -z "$HERMES_API_KEY" ] && [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Add a repository Actions secret named HERMES_API_KEY or OPENAI_API_KEY before running this benchmark."
+            exit 1
+          fi
+
+      - name: Run low-cost benchmark
+        env:
+          HERMES_REASONING_EFFORT: ${{ inputs.low_reasoning }}
+          HERMES_INPUT_COST_PER_MILLION: ${{ inputs.low_input_price }}
+          HERMES_OUTPUT_COST_PER_MILLION: ${{ inputs.low_output_price }}
+        run: |
+          python scripts/run_benchmark.py \
+            --model "${{ inputs.low_model }}" \
+            --label low-cost \
+            --output results/low-cost.json
+
+      - name: Run stronger-model benchmark
+        env:
+          HERMES_REASONING_EFFORT: ${{ inputs.strong_reasoning }}
+          HERMES_INPUT_COST_PER_MILLION: ${{ inputs.strong_input_price }}
+          HERMES_OUTPUT_COST_PER_MILLION: ${{ inputs.strong_output_price }}
+        run: |
+          python scripts/run_benchmark.py \
+            --model "${{ inputs.strong_model }}" \
+            --label stronger-fallback \
+            --output results/stronger.json
+
+      - name: Compare quality, cost, and routing policy
+        run: |
+          python scripts/compare_benchmarks.py \
+            results/low-cost.json \
+            results/stronger.json \
+            --json-output results/comparison.json \
+            --markdown-output results/comparison.md
+          cat results/comparison.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v7
+        with:
+          name: hermes-model-benchmark
+          path: results/
+          if-no-files-found: error
