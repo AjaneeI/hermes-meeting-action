@@ -21,6 +21,7 @@ SCHEMA_PATH = ROOT / "schemas" / "meeting_action_output.schema.json"
 @dataclass(frozen=True)
 class ExtractionMetrics:
     model: str
+    reasoning_effort: str | None
     latency_ms: float
     input_tokens: int | None
     output_tokens: int | None
@@ -104,15 +105,15 @@ def extract_meeting_with_metrics(
 
     schema = _read_json(SCHEMA_PATH)
     system_prompt = _read_text(SYSTEM_PROMPT_PATH)
+    reasoning_effort = os.environ.get("HERMES_REASONING_EFFORT")
 
-    started = time.perf_counter()
-    response = client.responses.create(
-        model=model_name,
-        input=[
+    request: dict[str, Any] = {
+        "model": model_name,
+        "input": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": build_user_prompt(meeting)},
         ],
-        text={
+        "text": {
             "format": {
                 "type": "json_schema",
                 "name": "hermes_meeting_action_output",
@@ -120,7 +121,12 @@ def extract_meeting_with_metrics(
                 "schema": schema,
             }
         },
-    )
+    }
+    if reasoning_effort:
+        request["reasoning"] = {"effort": reasoning_effort}
+
+    started = time.perf_counter()
+    response = client.responses.create(**request)
     latency_ms = round((time.perf_counter() - started) * 1000, 2)
 
     content = response.output_text
@@ -137,6 +143,7 @@ def extract_meeting_with_metrics(
 
     metrics = ExtractionMetrics(
         model=model_name,
+        reasoning_effort=reasoning_effort,
         latency_ms=latency_ms,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
