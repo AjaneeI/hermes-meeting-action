@@ -1,0 +1,2 @@
+jsonschema>=4.23,<5
+openai>=3,<4
