@@ -36,6 +36,7 @@ def _run_metadata(label: str, model: str, text_threshold: float) -> dict[str, An
     return {
         "label": label,
         "model": model,
+        "reasoning_effort": os.environ.get("HERMES_REASONING_EFFORT"),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "base_url": os.environ.get("HERMES_BASE_URL"),
         "text_threshold": text_threshold,
