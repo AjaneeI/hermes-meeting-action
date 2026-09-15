@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,22 @@ SYSTEM_PROMPT_PATH = ROOT / "prompts" / "extraction_system.txt"
 SCHEMA_PATH = ROOT / "schemas" / "meeting_action_output.schema.json"
 
 
+@dataclass(frozen=True)
+class ExtractionMetrics:
+    model: str
+    latency_ms: float
+    input_tokens: int | None
+    output_tokens: int | None
+    total_tokens: int | None
+    estimated_cost_usd: float | None
+
+
+@dataclass(frozen=True)
+class ExtractionResult:
+    payload: dict[str, Any]
+    metrics: ExtractionMetrics
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
@@ -23,6 +41,33 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _optional_env_float(name: str) -> float | None:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a number when set.") from exc
+
+
+def _estimate_cost(
+    input_tokens: int | None,
+    output_tokens: int | None,
+) -> float | None:
+    input_rate = _optional_env_float("HERMES_INPUT_COST_PER_MILLION")
+    output_rate = _optional_env_float("HERMES_OUTPUT_COST_PER_MILLION")
+    if input_rate is None or output_rate is None:
+        return None
+    if input_tokens is None or output_tokens is None:
+        return None
+    return round(
+        (input_tokens / 1_000_000) * input_rate
+        + (output_tokens / 1_000_000) * output_rate,
+        8,
+    )
 
 
 def build_user_prompt(meeting: dict[str, Any]) -> str:
@@ -41,10 +86,14 @@ def build_user_prompt(meeting: dict[str, Any]) -> str:
     )
 
 
-def extract_meeting(meeting: dict[str, Any]) -> dict[str, Any]:
-    model = os.environ.get("HERMES_MODEL")
-    if not model:
-        raise RuntimeError("Set HERMES_MODEL to the model identifier to use.")
+def extract_meeting_with_metrics(
+    meeting: dict[str, Any],
+    *,
+    model: str | None = None,
+) -> ExtractionResult:
+    model_name = model or os.environ.get("HERMES_MODEL")
+    if not model_name:
+        raise RuntimeError("Set HERMES_MODEL or pass model=... to choose a model.")
 
     api_key = os.environ.get("HERMES_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -56,8 +105,9 @@ def extract_meeting(meeting: dict[str, Any]) -> dict[str, Any]:
     schema = _read_json(SCHEMA_PATH)
     system_prompt = _read_text(SYSTEM_PROMPT_PATH)
 
+    started = time.perf_counter()
     response = client.chat.completions.create(
-        model=model,
+        model=model_name,
         temperature=0,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -72,6 +122,7 @@ def extract_meeting(meeting: dict[str, Any]) -> dict[str, Any]:
             },
         },
     )
+    latency_ms = round((time.perf_counter() - started) * 1000, 2)
 
     content = response.choices[0].message.content
     if not content:
@@ -79,23 +130,58 @@ def extract_meeting(meeting: dict[str, Any]) -> dict[str, Any]:
 
     payload = json.loads(content)
     validate_output(payload)
-    return payload
+
+    usage = response.usage
+    input_tokens = getattr(usage, "prompt_tokens", None) if usage else None
+    output_tokens = getattr(usage, "completion_tokens", None) if usage else None
+    total_tokens = getattr(usage, "total_tokens", None) if usage else None
+
+    metrics = ExtractionMetrics(
+        model=model_name,
+        latency_ms=latency_ms,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+        estimated_cost_usd=_estimate_cost(input_tokens, output_tokens),
+    )
+    return ExtractionResult(payload=payload, metrics=metrics)
+
+
+def extract_meeting(meeting: dict[str, Any]) -> dict[str, Any]:
+    """Backward-compatible payload-only extraction helper."""
+    return extract_meeting_with_metrics(meeting).payload
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Extract structured actions and decisions from meeting notes.")
+    parser = argparse.ArgumentParser(
+        description="Extract structured actions and decisions from meeting notes."
+    )
     parser.add_argument("input", type=Path, help="Path to a meeting input JSON file.")
     parser.add_argument("--output", type=Path, help="Optional output JSON path. Defaults to stdout.")
+    parser.add_argument(
+        "--metrics-output",
+        type=Path,
+        help="Optional path for latency/token/cost metadata.",
+    )
+    parser.add_argument("--model", help="Optional model override. Otherwise HERMES_MODEL is used.")
     args = parser.parse_args()
 
     meeting = _read_json(args.input)
-    payload = extract_meeting(meeting)
-    rendered = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+    result = extract_meeting_with_metrics(meeting, model=args.model)
+    rendered = json.dumps(result.payload, indent=2, ensure_ascii=False) + "\n"
 
     if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
     else:
         print(rendered, end="")
+
+    if args.metrics_output:
+        args.metrics_output.parent.mkdir(parents=True, exist_ok=True)
+        args.metrics_output.write_text(
+            json.dumps(asdict(result.metrics), indent=2) + "\n",
+            encoding="utf-8",
+        )
 
 
 if __name__ == "__main__":
