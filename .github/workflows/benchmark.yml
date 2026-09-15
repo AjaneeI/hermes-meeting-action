@@ -35,18 +35,29 @@ on:
         description: Strong-model output USD per 1M tokens
         required: true
         default: "12.00"
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: read
 
 jobs:
   benchmark:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-model-benchmark'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       PYTHONPATH: src
       HERMES_API_KEY: ${{ secrets.HERMES_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LOW_MODEL: ${{ inputs.low_model || 'gpt-5.6-luna' }}
+      STRONG_MODEL: ${{ inputs.strong_model || 'gpt-5.6-terra' }}
+      LOW_REASONING: ${{ inputs.low_reasoning || 'none' }}
+      STRONG_REASONING: ${{ inputs.strong_reasoning || 'low' }}
+      LOW_INPUT_PRICE: ${{ inputs.low_input_price || '0.20' }}
+      LOW_OUTPUT_PRICE: ${{ inputs.low_output_price || '1.20' }}
+      STRONG_INPUT_PRICE: ${{ inputs.strong_input_price || '2.00' }}
+      STRONG_OUTPUT_PRICE: ${{ inputs.strong_output_price || '12.00' }}
 
     steps:
       - name: Check out repository
@@ -70,23 +81,23 @@ jobs:
 
       - name: Run low-cost benchmark
         env:
-          HERMES_REASONING_EFFORT: ${{ inputs.low_reasoning }}
-          HERMES_INPUT_COST_PER_MILLION: ${{ inputs.low_input_price }}
-          HERMES_OUTPUT_COST_PER_MILLION: ${{ inputs.low_output_price }}
+          HERMES_REASONING_EFFORT: ${{ env.LOW_REASONING }}
+          HERMES_INPUT_COST_PER_MILLION: ${{ env.LOW_INPUT_PRICE }}
+          HERMES_OUTPUT_COST_PER_MILLION: ${{ env.LOW_OUTPUT_PRICE }}
         run: |
           python scripts/run_benchmark.py \
-            --model "${{ inputs.low_model }}" \
+            --model "$LOW_MODEL" \
             --label low-cost \
             --output results/low-cost.json
 
       - name: Run stronger-model benchmark
         env:
-          HERMES_REASONING_EFFORT: ${{ inputs.strong_reasoning }}
-          HERMES_INPUT_COST_PER_MILLION: ${{ inputs.strong_input_price }}
-          HERMES_OUTPUT_COST_PER_MILLION: ${{ inputs.strong_output_price }}
+          HERMES_REASONING_EFFORT: ${{ env.STRONG_REASONING }}
+          HERMES_INPUT_COST_PER_MILLION: ${{ env.STRONG_INPUT_PRICE }}
+          HERMES_OUTPUT_COST_PER_MILLION: ${{ env.STRONG_OUTPUT_PRICE }}
         run: |
           python scripts/run_benchmark.py \
-            --model "${{ inputs.strong_model }}" \
+            --model "$STRONG_MODEL" \
             --label stronger-fallback \
             --output results/stronger.json
 
