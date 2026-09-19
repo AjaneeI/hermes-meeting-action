@@ -46,6 +46,25 @@ docs/            Architecture and implementation notes
 
 **2026-09-14:** Repository initialized, the v0.1 structured action contract is defined, and a six-case evaluation baseline is in place. Next milestone is implementing the extraction runner, validating outputs against the schema, and measuring the low-cost extraction path before connecting durable task writes.
 
+## Upstream contribution path
+
+This project is also the intended vehicle for demonstrating external technical contribution once the standalone v0 is stable.
+
+The target sequence is:
+
+1. Build and validate the standalone workflow.
+2. Exercise it on real meeting-note examples with human approval around durable writes.
+3. Package the reusable portion as a focused Hermes skill, plugin, documentation contribution, test, or integration improvement.
+4. Submit the smallest legitimate upstream contribution that can be independently reviewed.
+5. Treat any accepted upstream contribution as evidence that the work has been evaluated by engineers outside this repository.
+
+This is not a reason to expand scope early. The contribution path starts only after the extraction runner, schema validation, evaluation baseline, logging, and idempotency behavior are working.
+
+Relevant upstream references:
+
+- Hermes contribution guide: https://github.com/NousResearch/hermes-agent/blob/main/CONTRIBUTING.md
+- Hermes plugin catalog policy: https://github.com/NousResearch/hermes-agent/blob/main/plugin-catalog/README.md
+
 ## Build log
 
 See [BUILD_LOG.md](BUILD_LOG.md) for the running implementation record.
