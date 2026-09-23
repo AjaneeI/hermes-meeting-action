@@ -89,3 +89,31 @@ For each model and for the routed policy, measure:
 ### Current gate
 
 Durable Asana or Notion writes remain disabled until the live six-case benchmark establishes a defensible extraction baseline.
+
+
+## 2026-09-23 — Evaluation instrumentation and benchmark credential gate
+
+### Completed
+
+- Extended benchmark summaries to report schema-valid cases with semantic field mismatches.
+- Added per-field failure-frequency counts so recurring owner/date/evidence errors can be identified across the six-case set.
+- Moved benchmark summary logic into the package after the first CI smoke check exposed a script import-path defect.
+- Corrected baseline validation in GitHub Actions run `35884079235`; schema validation and the scorer smoke test both passed.
+- Re-triggered the opt-in model benchmark against the current PR head.
+
+### Observed benchmark blocker
+
+GitHub Actions run `35888789029` stopped at the credential preflight before any model calls because both supported secret-backed variables were empty:
+
+- `HERMES_API_KEY`
+- `OPENAI_API_KEY`
+
+The low-cost model, stronger fallback, comparison, and artifact steps were skipped.
+
+### Interpretation
+
+This is a repository-configuration blocker, not evidence about extraction quality or model performance. The fail-closed behavior is intentional and should not be weakened to make the benchmark run.
+
+### Next evidence gate
+
+Configure exactly one supported repository Actions secret, re-trigger `run-model-benchmark`, then review the six-case field-level failures, latency, token use, estimated cost, and whether the stronger fallback actually repairs enough failures to justify escalation. Durable writes remain out of scope until that evidence exists.
