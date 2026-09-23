@@ -119,9 +119,11 @@ The default comparison is:
 
 Model IDs, reasoning effort, and token prices are workflow inputs so the benchmark can be updated without changing code when provider pricing or model choices change.
 
+The workflow deliberately fails before any model call when neither supported Actions secret is present. GitHub Actions run `35888789029` exercised that fail-closed path on September 23, 2026: both secret-backed environment variables were empty, so the low-cost and stronger-model steps were skipped. This is configuration evidence, not a model-quality result.
+
 ## Current status
 
-**2026-09-15:** v0.1 now has a machine-readable schema, six-case synthetic eval baseline, versioned extraction prompt, Responses API runner, schema validation, deterministic field-level scoring, token/cost/latency telemetry, a low-cost-versus-fallback comparison policy, baseline CI, and an opt-in live model benchmark workflow. Durable Asana or Notion writes remain intentionally out of scope until extraction quality is measured.
+**2026-09-23:** baseline schema/scorer validation is green in Actions run `35884079235`. The benchmark runner also reports semantic mismatch cases and failed-field frequencies so schema-valid but wrong output is visible. The first live benchmark trigger, run `35888789029`, stopped at credential preflight because neither `HERMES_API_KEY` nor `OPENAI_API_KEY` is configured; no model calls ran and no quality/cost conclusion is claimed. Durable Asana or Notion writes remain intentionally out of scope until extraction quality is measured.
 
 ## Build log
 
