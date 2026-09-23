@@ -53,3 +53,67 @@ The initial cases test explicit ownership, missing ownership, explicit and relat
 ### Next build step
 
 Implement the first extraction runner with JSON Schema validation, run it against the six-case evaluation set, and compare a low-cost extraction path against a stronger-model fallback before connecting Asana or Notion writes.
+
+## 2026-09-15 — Extraction runner and measurable model benchmark
+
+### Completed
+
+- Added an executable extraction runner using the OpenAI Responses API with strict JSON Schema output.
+- Added reusable JSON Schema validation before any downstream action can consume an extraction.
+- Added extraction telemetry for latency, input/output/total tokens, reasoning effort, and estimated token cost.
+- Added a deterministic field-level scorer that tolerates harmless wording changes while grading owners, dates, evidence, ambiguity state, approvals, review state, and object counts.
+- Added `scripts/run_benchmark.py` to execute the six synthetic cases against one model and persist inspectable results.
+- Added `scripts/compare_benchmarks.py` to compare a cheap model, a stronger model, and a selective fallback policy.
+- Added a scorer smoke test and kept the existing schema-validation CI as a zero-cost regression gate.
+- Modernized GitHub Actions to Node 24-compatible action versions.
+- Added an opt-in benchmark workflow using `gpt-5.6-luna` as the low-cost default and `gpt-5.6-terra` as the stronger fallback default, with model IDs, reasoning effort, and prices editable at dispatch time.
+- Added a `run-model-benchmark` PR label trigger so live model evaluation is intentional rather than spending API budget on every commit.
+
+### Routing decision
+
+Do not escalate merely because a source meeting is missing an owner, due date, or other fact. A stronger model cannot legitimately recover information that was never stated. The current fallback policy escalates extraction errors, low object confidence, or explicit conflict/uncertainty signals instead.
+
+### Evaluation target
+
+For each model and for the routed policy, measure:
+
+- average and minimum field-level correctness,
+- number of perfect cases,
+- failed cases,
+- latency,
+- input/output/total tokens,
+- estimated dollar cost,
+- which cases triggered fallback,
+- whether the stronger model improved the failure enough to justify its incremental cost.
+
+### Current gate
+
+Durable Asana or Notion writes remain disabled until the live six-case benchmark establishes a defensible extraction baseline.
+
+
+## 2026-09-23 — Evaluation instrumentation and benchmark credential gate
+
+### Completed
+
+- Extended benchmark summaries to report schema-valid cases with semantic field mismatches.
+- Added per-field failure-frequency counts so recurring owner/date/evidence errors can be identified across the six-case set.
+- Moved benchmark summary logic into the package after the first CI smoke check exposed a script import-path defect.
+- Corrected baseline validation in GitHub Actions run `35884079235`; schema validation and the scorer smoke test both passed.
+- Re-triggered the opt-in model benchmark against the current PR head.
+
+### Observed benchmark blocker
+
+GitHub Actions run `35888789029` stopped at the credential preflight before any model calls because both supported secret-backed variables were empty:
+
+- `HERMES_API_KEY`
+- `OPENAI_API_KEY`
+
+The low-cost model, stronger fallback, comparison, and artifact steps were skipped.
+
+### Interpretation
+
+This is a repository-configuration blocker, not evidence about extraction quality or model performance. The fail-closed behavior is intentional and should not be weakened to make the benchmark run.
+
+### Next evidence gate
+
+Configure exactly one supported repository Actions secret, re-trigger `run-model-benchmark`, then review the six-case field-level failures, latency, token use, estimated cost, and whether the stronger fallback actually repairs enough failures to justify escalation. Durable writes remain out of scope until that evidence exists.
