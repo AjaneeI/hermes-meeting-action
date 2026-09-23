@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from hermes_meeting_action.benchmark import summarize_records
 from hermes_meeting_action.scoring import score_case
-from scripts.run_benchmark import _summarize
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,7 @@ def _check_reference_scorer() -> None:
 
 
 def _check_semantic_mismatch_summary() -> None:
-    summary = _summarize(
+    summary = summarize_records(
         [
             {
                 "case_id": "perfect",
